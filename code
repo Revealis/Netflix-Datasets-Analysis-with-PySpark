@@ -1,0 +1,28 @@
+from pyspark.sql import functions as F
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import StructType, StructField, IntegerType, StringType, TimestampType
+#from pyspark.sql.window import Window
+#import pyspark.sql.functions as func
+import seaborn as sns
+import matplotlib.pyplot as plt
+spark = SparkSession.builder.appName("Netflix").getOrCreate()
+df=spark.read.csv("dbfs:/FileStore/tables/Netflixdatasets.csv")
+schema = StructType([
+    StructField("country_name", IntegerType(), True),
+    StructField("country_iso2", IntegerType(), True),
+    StructField("week", TimestampType(), True),
+    StructField("category", StringType(), True),
+    StructField("weekly_rank", IntegerType(), True),
+    StructField("show_title",StringType(), True),
+    StructField("season_title", StringType(), True),
+    StructField("cumulative_weeks_top_10", IntegerType(), True),
+])
+df = df.withColumnRenamed("_c0", "country_name").withColumnRenamed("_c1", "country_iso2").withColumnRenamed("_c2", "week").withColumnRenamed("_c3", "category").withColumnRenamed("_c4", "weekly_rank").withColumnRenamed("_c5", "show_title").withColumnRenamed("_c6", "season_title").withColumnRenamed("_c7", "cumulative_weeks_top_10")
+df = df.filter(col("country_name") != "country_name")
+df = df.withColumn("season_title", when(col("season_title") == "N/A", "No_Title").otherwise(col("show_title")))
+df.createOrReplaceTempView("Netflixdatasets")
+null_row_count = df.filter(col("cumulative_weeks_top_10").isNull()).count() 
+na_values_all = df.filter(col("season_title") == "N/A")
+result=spark.sql("SELECT * FROM Netflixdatasets WHERE category=='TV' AND weekly_rank=='10' ORDER BY cumulative_weeks_top_10 ASC")
+result.show()
